@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { Tag, Product, ProductTag } = require('../../models');
+const { Tag, Product, ProductTag, Category } = require('../../models');
 
 // The `/api/tags` endpoint
 
@@ -10,12 +10,13 @@ router.get('/', (req, res) => {
       'id', 
       'tag_name'
     ],
-  
+    order: [['id', 'tag_name']],
   // be sure to include its associated Product data
     include: [
       {
         model: Product,
-        attributes: ['id', 'product_name', 'price', 'stock', 'category_id']
+        attributes: ['id', 'product_name', 'price', 'stock', 'category_id'],
+        through: ProductTag
       }
     ]
   })
@@ -27,6 +28,7 @@ router.get('/', (req, res) => {
 });
 
 router.get('/:id', (req, res) => {
+
   // find a single tag by its `id`
   Tag.findOne({
     where: {
@@ -41,20 +43,20 @@ router.get('/:id', (req, res) => {
       }
     ]
   })
-  .then(tagData=>{
+
+  .then(tagData=> {
     if (!tagData){
-      res.status(404).json({
-        message: 'No tag found with this id!'
-      });
+      res.status(404).json({ message: 'No tag found with this id!' })
       return;
     }
     res.json(tagData)
-  })
+  }) 
   .catch(err => {
     console.log(err);
     res.status(500).json(err);
-  });
+  })
 });
+
 
 router.post('/', (req, res) => {
   // create a new tag
@@ -72,6 +74,7 @@ router.post('/', (req, res) => {
 router.put('/:id', (req, res) => {
   // update a tag's name by its `id` value
   Tag.update(req.body, {
+    individualHooks: true,
     where: {id: req.params.id}
   })
   .then(tagData => {
